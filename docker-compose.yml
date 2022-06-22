@@ -1,0 +1,116 @@
+version: "3.1"
+
+services:
+
+  eureka-server:      
+    container_name: eureka-server
+    build: /eureka-server/.
+    expose:
+      - '8761'
+    environment:      
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+      EUREKA_CLIENT_REGISTER-WITH-EUREKA: false
+      EUREKA_CLIENT_FETCH-REGISTRY: false
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  user-db:          
+    image: mysql:5.7
+    container_name: user-db
+    command: "--default-authentication-plugin=mysql_native_password"
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'abn_users'
+      MYSQL_USER: 'foo'
+      MYSQL_PASSWORD: 'foo'
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_TCP_PORT: '3306'
+    expose:
+      - '3306'
+    volumes:
+      - user-db-data:/var/lib/abn-user-db
+  
+  recipe-db:       
+    image: mysql:5.7
+    container_name: recipe-db
+    command: "--default-authentication-plugin=mysql_native_password"
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'abn_recipes'
+      MYSQL_USER: 'foo'
+      MYSQL_PASSWORD: 'foo'
+      MYSQL_ROOT_PASSWORD: 'root'
+      MYSQL_TCP_PORT: '3307'
+    expose:
+      - '3307'
+    volumes:
+      - recipe-db-data:/var/lib/abn-recipe-db  
+
+  auth-service:
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    links:
+      - eureka-server
+    container_name: auth-service
+    build: /auth-service/.
+    ports:
+      - '8080:8080'
+    restart: on-failure
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://user-db:3306/abn_users?autoReconnect=true&useSSL=false"
+      SPRING_DATASOURCE_USERNAME: "root"
+      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_JPA_HIBERNATE_DDL-AUTO: "create"
+      SPRING_JPA_SHOW-SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQL8Dialect"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/   
+
+  recipe-service:
+    depends_on:
+      - auth-service
+    container_name: recipe-service
+    build: /recipe-service/.
+    expose:
+      - '8082'
+    restart: on-failure
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://recipe-db:3307/abn_recipes?autoReconnect=true&useSSL=false"
+      SPRING_DATASOURCE_USERNAME: "root"
+      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_JPA_HIBERNATE_DDL-AUTO: "create"
+      SPRING_JPA_SHOW-SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQL8Dialect"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/   
+
+  user-service:
+    depends_on:
+      - recipe-service
+    container_name: user-service
+    build: /user-service/.
+    expose:
+      - '8081'
+    restart: on-failure
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://user-db:3306/abn_users?autoReconnect=true&useSSL=false"
+      SPRING_DATASOURCE_USERNAME: "root"
+      SPRING_DATASOURCE_PASSWORD: "root"
+      SPRING_JPA_HIBERNATE_DDL-AUTO: "create"
+      SPRING_JPA_SHOW-SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.MySQL8Dialect"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/    
+
+volumes:
+  user-db-data:
+  recipe-db-data:
+
+networks:
+  services-network:
+      driver: brige
