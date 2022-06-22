@@ -1,6 +1,7 @@
 # recipes-backend-microservices
-## Recipes backend app with microservices approach 
+### Recipes backend app with microservices approach 
 
+## Architecture
 This project implements the Gateway Pattern distributing every functionality in a microservices and isolated the clients from each service using Spring Cloud Feign, Eureka Service Discovery to enabling client-side load-balancing and Spring Security with JWT for the authentication and authorization.
 
 The microservices included are:
@@ -13,7 +14,11 @@ For the persistence there are two different MySQL databases. One for the user-se
 
 Every microservice has it's own unit tests, integration tests, and Dockerfile configuration to be containerize and then be deployed as cluster with a docker-compose. With this containers and the help of Eureka we can deploy many instance of one service, and register them to be used with the default round-robin load balancer in order to scale the application.
 
-The microservices are exposed on different internal ports, but none of them are exposed outside the container cluster, except for the 8080 which is used by the auth-service to redirect the traffic using Feign to the others microservices.
+## Deploy
+To deploy the app, just got the root folder and run the command:
+- docker-compose up -d
+- 
+The microservices are exposed on different internal ports inside the Docker cluster, but none of them are exposed outside the container cluster, except for the 8080 which is used by the auth-service to redirect the traffic using Feign to the others microservices.
 
 The user-service inserts a first user when it's start using the commandline runner begin able to login with the follow credentials in localhost:8080 :
 - user: abn_user
@@ -22,7 +27,8 @@ The user-service inserts a first user when it's start using the commandline runn
 - user: abn_admin
 - pass: admin
 
-The different endpoints to acces are:
+## Consume
+Once deployed, is possible to consume the different endpoints to access the resources:
 
 1. Users:
   - Login: http://localhost:8080/login Method: Get
@@ -51,3 +57,60 @@ The different endpoints to acces are:
   - Get Food Categories: http://localhost:8080/v1/food-categories Method: Get
   - Add Food Category: http://localhost:8080/v1/food-categories Method: Post
   - Delete Food Category: http://localhost:8080/v1/food-categories/{id} Method: Delete
+
+## Estructure of the JSON objects
+The JSON objects to consume the endpoints are:
+
+1. Users:
+{
+    "id": Number,
+    "name": String,
+    "username": String,
+    "password": String,
+    "roles": [
+        {
+            "id": Number,
+            "name": String
+        }
+    ]
+}
+
+2. Roles:
+{
+    "id": Number,
+    "name": String,
+}
+
+3. Recipes:
+{
+    "id": Number,
+    "username": String,
+    "title": String,
+    "instructions": String,    
+    "ingredients": [
+        {
+            "id": Number,
+            "name": String
+        }
+    ],
+    "foodCategory": {
+            "id": Number,
+            "name": String
+        },
+    "servingDishes": Number,
+    "creationDate": Date,
+    "cookTime": Number,
+    "preparationTime": Number
+}
+
+4. Ingredient:
+{
+    "id": Number,
+    "name": String
+}
+
+5. Food Category:
+{
+    "id": Number,
+    "name": String
+}
