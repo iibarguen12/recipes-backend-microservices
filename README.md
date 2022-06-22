@@ -11,7 +11,7 @@ The microservices included are:
 
 For the persistence there are two different MySQL databases. One for the user-service with the information of the users and the roles, which also is used for the auth-service to look up user validation, and other for the recipe-service with the information of the recipes, food categories and ingredients. with this approach a sharding database strategy can be implemented in the future.
 
-Every microservice has it's own Dockerfile configuration to be containerize and then be deployed as cluster with a docker-compose. With this containers and the help of Eureka we can deploy many instance of one service, and register them to be used with the default round-robin load balancer in order to scale the application.
+Every microservice has it's own unit tests, integration tests, and Dockerfile configuration to be containerize and then be deployed as cluster with a docker-compose. With this containers and the help of Eureka we can deploy many instance of one service, and register them to be used with the default round-robin load balancer in order to scale the application.
 
 The microservices are exposed on different internal ports, but none of them are exposed outside the container cluster, except for the 8080 which is used by the auth-service to redirect the traffic using Feign to the others microservices.
 
